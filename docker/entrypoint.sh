@@ -29,3 +29,4 @@ else
     "$@"
   fi
 fi
+git config --global --add safe.directory /usr/src/metasploit-framework

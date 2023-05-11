@@ -1,22 +1,39 @@
 version: '3'
 services:
   ms:
-    image: metasploitframework/metasploit-framework:latest
+    platform: linux/amd64
+    build:
+      context: .
+    # image: metasploitframework/metasploit-framework:latest
     environment:
-      DATABASE_URL: postgres://postgres@db:5432/msf?pool=200&timeout=5
+      # DATABASE_URL: postgres://postgres:postgres@db:5432/msf?pool=200&timeout=5
+      DATABASE_URL: postgres://postgres:postgres@db:5432/msf
     links:
       - db
     ports:
       - 4444:4444
     volumes:
-      - $HOME/.msf4:/home/msf/.msf4
+#      - $HOME/.msf4:/home/msf/.msf4
+      - ./home/.msf4:/home/msf/.msf4
 
   db:
     image: postgres:10-alpine
     volumes:
       - pg_data:/var/lib/postgresql/data
     environment:
-      POSTGRES_HOST_AUTH_METHOD: trust
+      # POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: msf
+
+  adminer:
+    image: adminer:latest
+    restart: always
+    ports:
+      - 8082:8080
+    environment:
+      - ADMINER_DEFAULT_SERVER=db
+
 
 volumes:
   pg_data:

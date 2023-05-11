@@ -100,3 +100,6 @@ rspec.failures
 
 #Ignore any base disk store files
 db/modules_metadata_base.pstore
+#The origional dockerfile dragged in stuff from our home, including .ssh and such.  let's not do that.
+# instead, it will be populated and mounted on the fly with an empty dir.
+home/.msf4/

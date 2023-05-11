@@ -30,11 +30,12 @@ RUN apk add --no-cache \
       zlib-dev \
       ncurses-dev \
       git \
-      go \
-    && echo "gem: --no-document" > /etc/gemrc \
+      go
+RUN echo "gem: --no-document" > /etc/gemrc \
     && gem update --system \
-    && bundle config $BUNDLER_ARGS \
-    && bundle install --jobs=8 \
+    && bundle update --bundler \
+    && bundle config $BUNDLER_ARGS
+RUN bundle install --jobs=8 \
     # temp fix for https://github.com/bundler/bundler/issues/6680
     && rm -rf /usr/local/bundle/cache \
     # needed so non root users can read content of the bundle
@@ -84,6 +85,7 @@ ENV GOROOT=$TOOLS_HOME/bin/go
 ENV PATH=${PATH}:${GOPATH}/bin:${GOROOT}/bin
 
 WORKDIR $APP_HOME
+RUN git config --global --add safe.directory /usr/src/metasploit-framework
 
 # we need this entrypoint to dynamically create a user
 # matching the hosts UID and GID so we can mount something
