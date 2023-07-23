@@ -1,10 +1,12 @@
-FROM ruby:3.0.5-alpine3.15 AS builder
-LABEL maintainer="Rapid7"
+FROM --platform=linux/amd64 ruby:3.0.5-alpine3.15 AS builder
 
+# ----------------------------------------------------------------------------------------
+# Build the ruby app
 ARG BUNDLER_CONFIG_ARGS="set clean 'true' set no-cache 'true' set system 'true' set without 'development test coverage'"
 ENV APP_HOME=/usr/src/metasploit-framework
 ENV TOOLS_HOME=/usr/src/tools
 ENV BUNDLE_IGNORE_MESSAGES="true"
+ENV GO_VERSION=go1.19.3
 WORKDIR $APP_HOME
 
 COPY Gemfile* metasploit-framework.gemspec Rakefile $APP_HOME/
@@ -41,17 +43,33 @@ RUN bundle install --jobs=8 \
     # needed so non root users can read content of the bundle
     && chmod -R a+r /usr/local/bundle
 
+# ----------------------------------------------------------------------------------------
+# Install go
+# Why do we do this from source??
 ENV GO111MODULE=off
-RUN mkdir -p $TOOLS_HOME/bin && \
-    cd $TOOLS_HOME/bin && \
-    curl -O https://dl.google.com/go/go1.19.3.src.tar.gz && \
-    tar -zxf go1.19.3.src.tar.gz && \
-    rm go1.19.3.src.tar.gz && \
-    cd go/src && \
-    ./make.bash
+WORKDIR $TOOLS_HOME
 
-FROM ruby:3.0.5-alpine3.15
-LABEL maintainer="Rapid7"
+#RUN tar -C $TOOLS_HOME -xzf go1.20.6.linux-amd64.tar.gz
+RUN cd $TOOLS_HOME && \
+    curl -O https://dl.google.com/go/go1.19.3.linux-amd64.tar.gz && \
+    tar -C $TOOLS_HOME -xzf go1.19.3.linux-amd64.tar.gz
+RUN go version
+
+
+# RUN mkdir -p $TOOLS_HOME/bin && \
+#     cd $TOOLS_HOME/bin && \
+#     curl -O https://dl.google.com/go/go1.19.3.src.tar.gz && \
+#     tar -zxf go1.19.3.src.tar.gz && \
+#     rm go1.19.3.src.tar.gz
+
+# # This fails ... can we just install the bins?
+# RUN cd bin/go/src && \
+#     ./make.bash
+
+
+# ----------------------------------------------------------------------------------------
+FROM --platform=linux/amd64 ruby:3.0.5-alpine3.15
+# ----------------------------------------------------------------------------------------
 
 ENV APP_HOME=/usr/src/metasploit-framework
 ENV TOOLS_HOME=/usr/src/tools

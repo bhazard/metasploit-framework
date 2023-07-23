@@ -4,13 +4,15 @@
 #  make clean-build run
 #    should get things done.
 
+# Start a command-line session with metasploit
+run:
+	docker run -i metasploit:dev
+
 # Run docker containers
-# run should not, by default, run signals because typically the db is not configured yet
-# and signals will fail.
-up run:
+up:
 	docker-compose up
 
-# Building clean takes about 35 mins on a mac
+# Building clean takes about 35 mins on a mac m1
 clean-build:
 	docker-compose  build --no-cache
 
