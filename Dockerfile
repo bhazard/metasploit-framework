@@ -47,14 +47,12 @@ RUN bundle install --jobs=8 \
 # Install go
 # Why do we do this from source??
 ENV GO111MODULE=off
-WORKDIR $TOOLS_HOME
 
 #RUN tar -C $TOOLS_HOME -xzf go1.20.6.linux-amd64.tar.gz
-RUN cd $TOOLS_HOME && \
+RUN mkdir -p $TOOLS_HOME && \
+    cd $TOOLS_HOME && \
     curl -O https://dl.google.com/go/go1.19.3.linux-amd64.tar.gz && \
     tar -C $TOOLS_HOME -xzf go1.19.3.linux-amd64.tar.gz
-RUN go version
-
 
 # RUN mkdir -p $TOOLS_HOME/bin && \
 #     cd $TOOLS_HOME/bin && \
@@ -94,9 +92,12 @@ RUN chown -R root:metasploit $APP_HOME/
 RUN chmod 664 $APP_HOME/Gemfile.lock
 RUN gem update --system
 RUN cp -f $APP_HOME/docker/database.yml $APP_HOME/config/database.yml
-RUN curl -L -O https://github.com/pypa/get-pip/raw/3843bff3a0a61da5b63ea0b7d34794c5c51a2f11/get-pip.py && python get-pip.py && rm get-pip.py
-RUN pip install impacket
-RUN pip install requests
+
+# Install pip as well as impacket and requests
+RUN pip3 install --upgrade pip
+#RUN curl -L -O https://github.com/pypa/get-pip/raw/3843bff3a0a61da5b63ea0b7d34794c5c51a2f11/get-pip.py && python get-pip.py && rm get-pip.py
+RUN pip3 install impacket
+RUN pip3 install requests
 
 ENV GOPATH=$TOOLS_HOME/go
 ENV GOROOT=$TOOLS_HOME/bin/go
