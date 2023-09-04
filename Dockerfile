@@ -1,4 +1,10 @@
-FROM --platform=linux/amd64 ruby:3.0.5-alpine3.15 AS builder
+# FROM --platform=linux/amd64 ruby:3.0.5-alpine3.15 AS builder
+ARG PLATFORM=arm64
+ARG RUBY_BASE_IMAGE=ruby:3.0.5-alpine3.15
+ARG GO_VERSION=go1.19.3
+ARG GO_BIN_TAR=go1.19.3.linux-amd64
+
+FROM --platform=$PLATFORM $RUBY_BASE_IMAGE AS ruby_builder
 
 # ----------------------------------------------------------------------------------------
 # Build the ruby app
@@ -6,7 +12,7 @@ ARG BUNDLER_CONFIG_ARGS="set clean 'true' set no-cache 'true' set system 'true' 
 ENV APP_HOME=/usr/src/metasploit-framework
 ENV TOOLS_HOME=/usr/src/tools
 ENV BUNDLE_IGNORE_MESSAGES="true"
-ENV GO_VERSION=go1.19.3
+ENV GO_VERSION=$GO_VERSION
 WORKDIR $APP_HOME
 
 COPY Gemfile* metasploit-framework.gemspec Rakefile $APP_HOME/
@@ -33,6 +39,14 @@ RUN apk add --no-cache \
       ncurses-dev \
       git \
       go
+# Try adding missing nmap deps from the nmap Dockerfile ...
+RUN apk add --update --no-cache \
+    ca-certificates \
+    libpcap \
+    libgcc libstdc++ \
+    libssl3 \
+  && update-ca-certificates
+
 RUN echo "gem: --no-document" > /etc/gemrc \
     && gem update --system \
     && bundle update --bundler \
@@ -66,7 +80,7 @@ RUN mkdir -p $TOOLS_HOME && \
 
 
 # ----------------------------------------------------------------------------------------
-FROM --platform=linux/amd64 ruby:3.0.5-alpine3.15
+FROM --platform=$PLATFORM $RUBY_BASE_IMAGE
 # ----------------------------------------------------------------------------------------
 
 ENV APP_HOME=/usr/src/metasploit-framework
@@ -77,17 +91,25 @@ ENV METASPLOIT_GROUP=metasploit
 # used for the copy command
 RUN addgroup -S $METASPLOIT_GROUP
 
+
+#RUN apk add --no-cache bash sqlite-libs nmap nmap-scripts nmap-nselibs \
+#    postgresql-libs python2 python3 py3-pip ncurses libcap su-exec alpine-sdk \
+#    python2-dev openssl-dev nasm mingw-w64-gcc
+
 RUN apk add --no-cache bash sqlite-libs nmap nmap-scripts nmap-nselibs \
     postgresql-libs python2 python3 py3-pip ncurses libcap su-exec alpine-sdk \
-    python2-dev openssl-dev nasm mingw-w64-gcc
+    python2-dev openssl-dev nasm
+
+RUN apk add python3-dev
+RUN apk add gcompat
 
 RUN /usr/sbin/setcap cap_net_raw,cap_net_bind_service=+eip $(which ruby)
 RUN /usr/sbin/setcap cap_net_raw,cap_net_bind_service=+eip $(which nmap)
 
-COPY --from=builder /usr/local/bundle /usr/local/bundle
+COPY --from=ruby_builder /usr/local/bundle /usr/local/bundle
 RUN chown -R root:metasploit /usr/local/bundle
 COPY . $APP_HOME/
-COPY --from=builder $TOOLS_HOME $TOOLS_HOME
+COPY --from=ruby_builder $TOOLS_HOME $TOOLS_HOME
 RUN chown -R root:metasploit $APP_HOME/
 RUN chmod 664 $APP_HOME/Gemfile.lock
 RUN gem update --system
@@ -95,7 +117,6 @@ RUN cp -f $APP_HOME/docker/database.yml $APP_HOME/config/database.yml
 
 # Install pip as well as impacket and requests
 RUN pip3 install --upgrade pip
-#RUN curl -L -O https://github.com/pypa/get-pip/raw/3843bff3a0a61da5b63ea0b7d34794c5c51a2f11/get-pip.py && python get-pip.py && rm get-pip.py
 RUN pip3 install impacket
 RUN pip3 install requests
 
