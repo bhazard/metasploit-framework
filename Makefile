@@ -5,10 +5,8 @@
 #    should get things done.
 
 # Start a command-line session with metasploit
-# produces a warning:
-#   WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested
 run:
-	docker run -it metasploit:dev
+	docker-compose run -it ms
 
 shell:
 	docker-compose exec -it ms /bin/bash
